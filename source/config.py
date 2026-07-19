@@ -6,8 +6,7 @@ load_dotenv()
 def _get_required(key: str) -> str:
     value = os.environ.get(key)
     if value is None:
-        raise ValueError(f"Missing requi
-                         red environment variable: {key}")
+        raise ValueError(f"Missing required environment variable: {key}")
     return value
 
 SHEET_URL = _get_required("SODASTREAM_SHEET_URL")
