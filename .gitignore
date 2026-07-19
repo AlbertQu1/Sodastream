@@ -1,0 +1,16 @@
+# Variables sensibles
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Salidas locales
+*.csv
+!*.example.csv
+*.png
+
+# Sistema
+.DS_Store
