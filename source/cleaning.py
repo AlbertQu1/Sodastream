@@ -6,7 +6,7 @@ def parse_intensity(text:str) -> dict:
         return {"light": 0, "medium": 0, "strong": 0}
     
     labels = {"L": "light", "M": "medium", "S": "strong"}
-    shots = [s.strip() for s in str(text).split(",")]
+    shots = [s.strip().upper() for s in str(text).split(",")]
     counts = Counter(shots)
 
     return {labels[k]: counts.get(k,0) for k in labels}
@@ -45,7 +45,7 @@ def clean_refills(df: pd.DataFrame) -> pd.DataFrame:
 def clean_flavors(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df.columns = [c.strip().lower() for c in df.columns]
-    df.rename(columns={"id": "sabpr_id"}, inplace=True)
+    df.rename(columns={"id": "sabor_id"}, inplace=True)
     df["sabor"] = df["sabor"].str.strip().str.lower()
     return df
 
