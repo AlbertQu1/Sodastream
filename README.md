@@ -1,30 +1,53 @@
-# Gasificador — Análisis de ROI y consumo
+# sodastream-analytics
 
-Tracking de consumo de agua gasificada casera: costo por litro, ahorro vs. precio de mercado de referencia, y retorno de inversión (ROI) del equipo, con soporte para jarabes/sabores.
+Cost and ROI tracking for home sparkling water carbonation: cost per liter, savings vs. market reference price, and equipment payback period, with support for flavor syrups.
 
-## Estado del proyecto
+## Project status
 
-🚧 En reescritura. La lógica de negocio se validó en iteraciones previas, pero el script se está construyendo desde cero con un diseño más sólido antes de subir código a este repo.
+✅ First working version complete. Run `python source/main.py` for a full report: total savings, ROI per equipment (previous vs. current), yearly breakdown, and flavor breakdown.
 
-Requiere un `.env` con tus credenciales (ver `.env.example`).
+Requires a `.env` with your credentials (see `.env.example`).
 
-## Modelo de datos
+## Data model
 
-El proyecto parte de una base de datos en Google Sheets con estas tablas:
+The project pulls from a Google Sheets database with these tables:
 
-- **Consumo** — log diario: fecha, consumo, sabor_id, ml, cilindro_id
-- **Recargas** — costo de cada cilindro al recargarse (incluye cilindros con costo $0, los incluidos con el equipo)
-- **Sabor_id** — catálogo de sabores, incluye `0 = agua natural` como categoría base
-- **Sabor_historico** — compras de jarabes: fecha, costo, tamaño
-- **Precios** — benchmark externo de mercado por segmento, actualizable año con año
-- **Equipos** *(pendiente de agregar)* — costo de equipo(s), fecha de compra/venta
+- **Consumption** — daily log: date, amount, flavor_id, ml, cylinder_id, intensity (light/medium/strong, comma-separated)
+- **Refills** — cost of each cylinder refill (includes cylinders with $0 cost, the ones bundled with the equipment)
+- **Flavor_id** — flavor catalog, includes `0 = plain water` as the base category
+- **Flavor_history** — syrup purchases: date, cost, size
+- **Prices** — external market benchmark by segment, updated yearly
 
-## Estructura del repo
+Equipment cost, purchase dates, and resale value are tracked in `source/params.py`, not in a spreadsheet — they change rarely enough that a full table would be overkill.
+
+## Structure
 
 ```
-.
-├── README.md
-├── .env.example
-├── .gitignore
-└── src/              # script(s) activos, en construcción
+source/
+├── config.py         # loads .env variables
+├── data_loader.py     # reads raw data from Google Sheets
+├── cleaning.py          # normalizes types, parses intensity
+├── params.py             # equipment cost/dates
+├── calculations.py         # cylinder cost, syrup cost, savings, ROI
+├── report.py                 # prints formatted results
+└── main.py                    # runs the full pipeline
 ```
+
+## Business logic notes
+
+- **Cylinder cost across years**: when a cylinder's usage spans two calendar years, its refill cost is allocated proportionally to liters consumed in each year (not charged fully to one year).
+- **Syrup cost**: calculated from the most recent purchase price per flavor (`flavor_history`), so repurchasing a flavor doesn't duplicate rows.
+- **Flavors without purchase history** (e.g. natural lemon) automatically cost $0 — they simply don't match anything in `flavor_history`, no special-case code needed.
+- **Intensity** (light/medium/strong) is captured as a comma-separated string (e.g. `S,S` or `S,L`) to support the new equipment's multi-shot mode. `-` marks events where intensity wasn't tracked (old manual equipment). Parsing is case-insensitive.
+- **Equipment ROI** is tracked separately per equipment (previous vs. current), based on purchase/end dates in `params.py`.
+- **Equipment resale**: when the previous equipment is sold, update `PREVIOUS_EQUIPMENT_SALE_MXN` in `params.py`. If a charged CO2 cylinder is sold along with it, its value should also be counted as recovered — otherwise that gas cost gets counted twice (once as your own operating cost, once given away for free in the sale). Use `PREVIOUS_EQUIPMENT_SALE_CYLINDER_VALUE_MXN` for that case.
+
+## Future direction
+
+The long-term goal is to replace manual Google Sheets capture with a PWA (installable web app), following the same pattern built for Coffee Analytics:
+
+1. **Now** — Google Sheets as the data source, manual capture
+2. **Next** — migrate to a self-hosted Postgres database (`data_loader.py` is the only file that changes)
+3. **Final** — a PWA for direct capture (flavor, ml, cylinder, intensity as light/medium/strong), offline-first via Service Worker + IndexedDB, syncing to Postgres through an n8n webhook when back online
+
+Because `data_loader.py` is the only module aware of the data source, each phase only requires changing that one file — `cleaning.py`, `calculations.py`, and `report.py` stay untouched.
