@@ -118,3 +118,39 @@ def calculate_roi(with_savings: pd.DataFrame) -> dict:
             "roi_achieved": current_roi >= 0,
         },
     }
+    
+def season_name(month: int) -> str:
+    if pd.isna(month):
+        return "sin temporada"
+    if month in (12, 1, 2):
+        return "invierno"
+    if month in (3, 4, 5):
+        return "primavera"
+    if month in (6, 7, 8):
+        return "verano"
+    return "otono"
+
+
+def climate_season(month: int) -> str:
+    if pd.isna(month):
+        return "sin temporada"
+    if month in (5, 6, 7, 8, 9, 10):
+        return "lluvias"
+    return "seca"
+
+def weekday_name(day: int) -> str:
+    if pd.isna(day):
+        return "sin dia"
+    names = {
+        0: "lunes", 1: "martes", 2: "miercoles", 3: "jueves",
+        4: "viernes", 5: "sabado", 6: "domingo",
+    }
+    return names.get(int(day), "sin dia")
+
+def add_season_columns(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    df["mes"] = df["fecha"].dt.month
+    df["temporada"] = df["mes"].apply(season_name)
+    df["temporada_clima"] = df["mes"].apply(climate_season)
+    df["dia_semana"] = df["fecha"].dt.dayofweek.apply(weekday_name)
+    return df

@@ -68,3 +68,31 @@ def print_flavor_breakdown(with_savings, flavors):
         print(f"  Litros:             {row['litros']:.0f} L")
         print(f"  ml de jarabe usado: {row['ml_totales']:.0f} ml")
         print(f"  Costo de jarabe:    ${row['costo_jarabe']:.2f} MXN")
+        
+def print_seasonal_breakdown(with_savings):
+    print("\n" + "=" * 40)
+    print("DESGLOSE POR TEMPORADA")
+    print("=" * 40)
+    por_temporada = with_savings.groupby("temporada").agg(
+        litros=("consumo", "sum"), ahorro=("ahorro_evento", "sum")
+    )
+    for temporada, row in por_temporada.iterrows():
+        print(f"{temporada:<12} Litros: {row['litros']:.0f}")
+
+    print("\n" + "-" * 40)
+    print("LLUVIAS VS SECA")
+    print("-" * 40)
+    por_clima = with_savings.groupby("temporada_clima").agg(
+        litros=("consumo", "sum"), ahorro=("ahorro_evento", "sum")
+    )
+    for temporada, row in por_clima.iterrows():
+        print(f"{temporada:<12} Litros: {row['litros']:.0f}")
+
+    print("\n" + "-" * 40)
+    print("POR DIA DE LA SEMANA")
+    print("-" * 40)
+    por_dia = with_savings.groupby("dia_semana").agg(
+        litros=("consumo", "sum"), ahorro=("ahorro_evento", "sum")
+    )
+    for dia, row in por_dia.iterrows():
+        print(f"{dia:<12} Litros: {row['litros']:.0f}")
