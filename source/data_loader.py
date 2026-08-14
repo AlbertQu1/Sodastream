@@ -1,34 +1,8 @@
 import pandas as pd
-# from config import SHEET_URL, GID_CONSUMPTION, GID_REFILLS, GID_FLAVORS, GID_MARKET, GID_FLAVOR_HISTORY
 from sqlalchemy import create_engine
-from config import PG_HOST, PG_PORT, PG_DATABASE, PG_USER, PG_PASSWORD
+from config import PG_HOST, PG_PORT, PG_DATABASE, PG_USER, PG_PASSWORD, CASA_LUGAR_UUID
+from sqlalchemy import text
 
-# def _load_gid(gid:str) -> pd.DataFrame:
-#     return pd.read_csv(f"{SHEET_URL}&gid={gid}")
-
-# def load_consumption() -> pd.DataFrame:
-#     return _load_gid(GID_CONSUMPTION)
-
-# def load_refills() -> pd.DataFrame:
-#     return _load_gid(GID_REFILLS)
-
-# def load_flavors() -> pd.DataFrame:
-#     return _load_gid(GID_FLAVORS)
-
-# def load_market() -> pd.DataFrame:
-#     return _load_gid(GID_MARKET)
-
-# def load_flavor_history() -> pd.DataFrame:
-#     return _load_gid(GID_FLAVOR_HISTORY)
-
-# def load_all() -> dict:
-#     return {
-#         "consumption": load_consumption(),
-#         "refills": load_refills(),
-#         "flavors": load_flavors(),
-#         "market": load_market(),
-#         "flavor_history": load_flavor_history()
-#     }
 
 _engine = create_engine(
     f"postgresql+psycopg2://{PG_USER}:{PG_PASSWORD}@{PG_HOST}:{PG_PORT}/{PG_DATABASE}",
@@ -112,3 +86,24 @@ def load_all() -> dict:
         "market": load_market(),
         "flavor_history": load_flavor_history(),
     }
+    
+def soda_durante_partidas_casa(ventana_horas: int = 2) -> pd.DataFrame:
+    """Preparaciones de soda con hora REAL (excluye timestamps sinteticos de
+    mediodia que vienen de la migracion del sheet -- esos no reflejan la
+    hora real en que se preparo la soda) que caen dentro de +-ventana_horas
+    de una partida de board games jugada en 'Casa'. Cruce directo entre
+    soda_stream y boardgames_stats, misma base 'casa'."""
+    query = text("""
+        SELECT sp.prepared_timestamp, sp.bottles_prepared,
+               p.fecha AS partida_fecha, j.nombre AS juego
+        FROM soda_stream.soda_preparations sp
+        JOIN boardgames_stats.partidas p
+          ON p.lugar_uuid = :lugar_casa
+         AND sp.prepared_timestamp BETWEEN p.fecha - make_interval(hours => :ventana)
+                                        AND p.fecha + make_interval(hours => :ventana)
+        JOIN boardgames_stats.juegos j ON j.uuid = p.juego_uuid
+        WHERE sp.prepared_timestamp::time <> '12:00:00'
+        ORDER BY sp.prepared_timestamp
+    """)
+    with _engine.connect() as conn:
+        return pd.read_sql(query, conn, params={"lugar_casa": CASA_LUGAR_UUID, "ventana": ventana_horas})
