@@ -71,10 +71,8 @@ def calculate_total_cost_per_liter(full_cost: pd.DataFrame) -> pd.DataFrame:
     return result
 
 def calculate_savings_vs_market(with_total_cost: pd.DataFrame, market: pd.DataFrame) -> pd.DataFrame:
-    market_price_by_year = {
-        2025: market["2025"].mean(),
-        2026: market["2026"].mean(),
-    }
+    year_cols = [c for c in market.columns if str(c).strip().isdigit()]
+    market_price_by_year = {int(y): market[y].mean() for y in year_cols}
 
     result = with_total_cost.copy()
     result["precio_mercado"] = result["anio"].map(market_price_by_year)
