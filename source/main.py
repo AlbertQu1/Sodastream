@@ -1,4 +1,4 @@
-from data_loader import load_all
+from data_loader import load_all, soda_durante_partidas_casa
 from cleaning import clean_all
 from calculations import (
     calculate_cylinder_cost_by_year,
@@ -8,7 +8,10 @@ from calculations import (
     calculate_savings_vs_market,
     calculate_roi, add_season_columns
 )
-from report import print_summary, print_yearly_breakdown, print_flavor_breakdown, print_seasonal_breakdown
+from report import (
+    print_summary, print_yearly_breakdown, print_flavor_breakdown, 
+    print_seasonal_breakdown, print_soda_durante_partidas
+)
 
 
 def main():
@@ -26,7 +29,8 @@ def main():
     print_summary(with_savings, roi)
     print_yearly_breakdown(with_savings)
     print_flavor_breakdown(with_savings, clean["flavors"])
-    print_seasonal_breakdown(with_savings) 
+    print_seasonal_breakdown(with_savings)
+    print_soda_durante_partidas(soda_durante_partidas_casa()) 
 
 
 if __name__ == "__main__":

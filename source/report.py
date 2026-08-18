@@ -96,3 +96,13 @@ def print_seasonal_breakdown(with_savings):
     )
     for dia, row in por_dia.iterrows():
         print(f"{dia:<12} Litros: {row['litros']:.0f}")
+        
+def print_soda_durante_partidas(df):
+    print("\n" + "=" * 40)
+    print("SODA CERCA DE PARTIDAS EN CASA (+-2h)")
+    print("=" * 40)
+    if df.empty:
+        print("Sin coincidencias todavia (normal mientras se acumulan preparaciones con hora real).")
+        return
+    for _, row in df.iterrows():
+        print(f"{row['prepared_timestamp']} | {row['bottles_prepared']} botellas | {row['juego']} ({row['partida_fecha']})")
